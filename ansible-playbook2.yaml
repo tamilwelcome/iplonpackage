@@ -1,0 +1,210 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt: update_cache=yes cache_valid_time=3600
+      ignore_errors: yes
+
+    - name: Update repository
+      apt_repository:
+       repo: 'ppa:git-core/ppa'
+       state: present
+      ignore_errors: yes
+
+    - name: Install git
+      apt:
+       name: git
+       state: present
+       update_cache: yes
+      ignore_errors: yes
+
+    - name: install a vim on ubuntu
+      apt:
+        name: vim
+        state: latest
+      ignore_errors: yes
+      when: ansible_distribution == 'Ubuntu'      
+
+    - name: install a tcpdump on ubuntu
+      apt:
+        name: tcpdump
+        state: latest
+      ignore_errors: yes
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: install a unrar on ubuntu
+      apt:
+        name: unrar
+        state: latest
+      ignore_errors: yes
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: install a htop on ubuntu
+      apt:
+        name: htop
+        state: latest
+      ignore_errors: yes
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: install a net-tools on ubuntu
+      apt:
+        name: net-tools
+        state: latest
+      ignore_errors: yes
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: install a curl on ubuntu
+      apt:
+        name: curl
+        state: latest
+      ignore_errors: yes
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: install a nmap on ubuntu
+      apt:
+        name: nmap
+        state: latest
+      ignore_errors: yes
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: install a vsftpd on ubuntu
+      apt:
+        name: vsftpd
+        state: latest
+      ignore_errors: yes
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Add group "iplon" to remote server
+      group:
+        name: iplon
+        gid: 2010
+        state: present
+
+    - name: Add the user 'iplon' with a specific uid and a primary group of 'admin'
+      ansible.builtin.user:
+        name: iplon
+        comment: iplon
+        group: iplon
+      ignore_errors: yes
+
+    - name: Add the user 'www-data' with a specific uid and a primary group of 'admin'
+      ansible.builtin.user:
+        name: www-data
+        comment: www-data
+        group: www-data
+      ignore_errors: yes
+
+    - name: Update apt cache
+      apt: update_cache=yes cache_valid_time=3600
+      ignore_errors: yes
+
+    - name: Install dependencies
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - software-properties-common
+        - gnupg-agent
+      ignore_errors: yes
+      
+    - name: Add an apt signing key for Docker
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+      ignore_errors: yes
+
+    - name: Add apt repository for stable version
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+        state: present
+      ignore_errors: yes
+
+    - name: Install Docker
+      apt:
+        name: "{{ packages }}"
+        update_cache: yes
+      vars:
+        packages:
+        - docker-ce
+        - docker-ce-cli 
+        - containerd.io
+        - docker-compose  
+      ignore_errors: yes
+
+    - name: Reboot a slow machine that might have lots of updates to apply
+      reboot:
+        reboot_timeout: 300
+
+    - name: Git checkout
+      ansible.builtin.git:
+        repo: 'https://x-token-auth:ATCTT3xFfGN0-zgeCnKJ7nHvv5Uo9I8FS1umDFSeZmfEHs32qzho8kbt3siPs0f8HzpKUZZXprApN2D6vVnjP0VnPwOOXKDAwmlWQMwUOYYFIhb2COPxF1AhPdE4hoDGNryZZFksuvo9E9DamILFwQXW9AlxgalKpKTBlvt5uDYtJNzU-fuLWbE=5CDE9254@bitbucket.org/iplon-india/iot-amd-6.6-ubuntu-22.04-production.git'
+        dest: /home/iplon/repos
+        force: yes
+        clone: yes
+        update: yes
+        version: release-0.22
+      ignore_errors: yes
+
+    - name: Fix 'support_tools' permissions
+      file: path=/home/iplon/repos owner=root group=root mode=0777 state=directory recurse=yes
+      ignore_errors: yes
+
+    - name: Go to the directory
+      ignore_errors: yes
+      action: shell cd /home/iplon/repos/
+
+
+    - name: Execute the iot script
+      shell:
+            /home/iplon/repos/iot-6.6-production.sh
+      ignore_errors: yes
+
+    - name: Transfer the untar.sh script
+      ansible.builtin.copy:
+        src: /etc/ansible/untar.sh
+        dest: /home/iplon/repos/untar.sh
+        mode: '0777'
+
+    - name: Go to the directory
+      ignore_errors: yes
+      action: shell cd /home/iplon/repos/
+
+    - name: Execute the iot script
+      shell:
+            /home/iplon/repos/untar.sh
+      ignore_errors: yes      
+
+    - name: Transfer the harborkey.sh script
+      ansible.builtin.copy:
+        src: /etc/ansible/harborkey.sh
+        dest: /home/iplon/repos/harborkey.sh
+        mode: '0777'
+    - name: Go to the directory
+      ignore_errors: yes
+      action: shell cd /home/iplon/repos/
+        
+    - name: Execute the iot script
+      shell:
+            /home/iplon/repos/harborkey.sh
+      ignore_errors: yes
+
+    - name: Transfer the installpackages.sh script
+      ansible.builtin.copy:
+        src: /etc/ansible/installpackages.sh
+        dest: /home/iplon/repos/IOT66_BSP_PACKAGES/installpackages.sh
+        mode: '0777'
+
+    - name: Go to the directory
+      ignore_errors: yes
+      action: shell cd /home/iplon/repos/IOT66_BSP_PACKAGES/
+
+    - name: Execute the iot script
+      shell:
+            /home/iplon/repos/IOT66_BSP_PACKAGES/installpackages.sh
+      ignore_errors: yes
