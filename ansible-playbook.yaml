@@ -1,0 +1,230 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+    - name: Install git
+      apt:
+       name: git
+       state: present
+       update_cache: yes
+      ignore_errors: yes
+
+    - name: install a vim on ubuntu
+      apt:
+        name: vim
+        state: latest
+      ignore_errors: yes
+      when: ansible_distribution == 'Ubuntu'      
+
+    - name: install a tcpdump on ubuntu
+      apt:
+        name: tcpdump
+        state: latest
+      ignore_errors: yes
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: install a htop on ubuntu
+      apt:
+        name: htop
+        state: latest
+      ignore_errors: yes
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: install a net-tools on ubuntu
+      apt:
+        name: net-tools
+        state: latest
+      ignore_errors: yes
+      when: ansible_distribution == 'Ubuntu'   
+
+    - name: Allow port range 21-
+      community.general.ufw:
+        rule: allow
+        port: '21'  
+        proto: tcp 
+        
+    - name: Allow port range 22-
+      community.general.ufw:
+        rule: allow
+        port: '22' 
+        proto: tcp
+
+    - name: Allow port range 53-
+      community.general.ufw:
+        rule: allow
+        port: '53'
+        proto: tcp
+
+    - name: Allow port range 80-
+      community.general.ufw:
+        rule: allow
+        port: '80'
+        proto: tcp
+
+    - name: Allow port range 502-
+      community.general.ufw:
+        rule: allow
+        port: '502'
+        proto: tcp
+
+    - name: Allow port range 8000-
+      community.general.ufw:
+        rule: allow
+        port: '8000'
+        proto: tcp
+
+    - name: Allow port range 5000-
+      community.general.ufw:
+        rule: allow
+        port: '5000'
+        proto: tcp
+
+    - name: Allow port range 5001-
+      community.general.ufw:
+        rule: allow
+        port: '5001'
+        proto: tcp
+
+    - name: Allow port range 1800-
+      community.general.ufw:
+        rule: allow
+        port: '1880'
+        proto: tcp
+
+    - name: Allow port range 3000-
+      community.general.ufw:
+        rule: allow
+        port: '3000'
+        proto: tcp
+
+    - name: Allow port range 15672-
+      community.general.ufw:
+        rule: allow
+        port: '15672'
+        proto: tcp
+
+    - name: Allow port range 1883-
+      community.general.ufw:
+        rule: allow
+        port: '1883'
+        proto: tcp
+
+    - name: Allow port range 8086-
+      community.general.ufw:
+        rule: allow
+        port: '8086' 
+        proto: tcp
+
+    - name: Allow everything and enable UFW
+      community.general.ufw:
+        state: enabled        
+
+    - name: install a curl on ubuntu
+      apt:
+        name: curl
+        state: latest
+      ignore_errors: yes
+      when: ansible_distribution == 'Ubuntu'        
+
+    - name: Update apt cache
+      apt: update_cache=yes cache_valid_time=3600
+      ignore_errors: yes
+
+    - name: Install dependencies
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+      vars:
+        packages:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - software-properties-common
+        - gnupg-agent
+      ignore_errors: yes
+      
+    - name: Add an apt signing key for Docker
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+      ignore_errors: yes
+
+    - name: Add apt repository for stable version
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+        state: present
+      ignore_errors: yes
+
+    - name: Install Docker
+      apt:
+        name: "{{ packages }}"
+        update_cache: yes
+      vars:
+        packages:
+        - docker-compose  
+      ignore_errors: yes
+
+    - name: Reboot a slow machine that might have lots of updates to apply
+      reboot:
+        reboot_timeout: 300
+
+    - name: Creating required directories
+      file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+        - '/home/iplon/repos'
+
+    - name: Fix 'support_tools' permissions
+      file: path=/home/iplon/repos owner=root group=root mode=0777 state=directory recurse=yes
+      ignore_errors: yes
+
+    - name: Transfer the untar.sh script
+      ansible.builtin.copy:
+        src: /etc/ansible/serverpackages/docker-compose.yaml
+        dest: /home/iplon/repos/docker-compose.yaml
+        mode: '0777'  
+
+    - name: Create Docker daemon configuration file for Harbor
+      copy:
+        content: |
+         {
+            "insecure-registries" : ["igate-ivpn.iplon.co.in:8080"]
+         }
+        dest: /etc/docker/daemon.json
+
+    - name: Restart Docker service
+      become: yes
+      command: systemctl restart docker
+
+
+    - name: Transfer the installpackages.sh script
+      ansible.builtin.copy:
+        src: /etc/ansible/serverpackages/installpackages.sh
+        dest: /home/iplon/repos/installpackages.sh
+        mode: '0777'
+
+    - name: Go to the directory
+      ignore_errors: yes
+      action: shell cd /home/iplon/repos/
+
+    - name: Execute the iot script
+      shell:
+            /home/iplon/repos/installpackages.sh
+      ignore_errors: yes
+
+    - name: Restart ssh service
+      become: yes
+      command: systemctl restart ssh        
+
+    - name: Restart ntp service
+      become: yes
+      command: systemctl restart ntp        
+
+    - name: Restart cron service
+      become: yes
+      command: systemctl restart cron
+
+    - name: Run netplan apply
+      command: netplan apply
