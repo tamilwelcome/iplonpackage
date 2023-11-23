@@ -1,0 +1,270 @@
+version: "3.3"
+
+services:
+  scaback:
+    container_name: scaback
+    image: igate-ivpn.iplon.co.in:8080/iot-6.6/scaback:4.0
+    volumes:
+      - scaback-lib:/opt/iplon/ddt
+      - /mnt/docker_common:/mnt/docker_common
+    network_mode: "host"
+    restart: always
+    privileged: true
+  
+  scaback_collect:
+    container_name: scaback-collect
+    image: igate-ivpn.iplon.co.in:8080/iot-6.6/scaback:collect
+    volumes:
+      - /mnt/docker_common:/mnt/docker_common
+    network_mode: "host"
+    restart: always
+  
+  scabackFast:
+    container_name: scabackFast
+    image: igate-ivpn.iplon.co.in:8080/iot-6.6/scabackfast:4.1
+    volumes:
+      - scabackFast-lib:/opt/iplon/ddt
+      - /mnt/docker_common:/mnt/docker_common
+    network_mode: "host"
+    restart: always
+    privileged: true
+ 
+  scabackFast_collect:
+    container_name: scabackFast-collect
+    image: igate-ivpn.iplon.co.in:8080/iot-6.6/scabackfast:collect
+    volumes:
+      - /mnt/docker_common:/mnt/docker_common
+    network_mode: "host"
+    restart: always
+  
+  influxdb:
+    container_name: influxdb
+    image: igate-ivpn.iplon.co.in:8080/iot-6.6/influxdb:2.4.0
+    volumes:
+      - influxdb-etc:/etc/influxdb
+      - influxdb-lib:/root/.influxdbv2
+      - influxdb-log:/var/log
+      - /mnt/docker_common:/mnt/docker_common
+    network_mode: "host"
+    restart: always
+    privileged: true
+
+  postgresql:
+    container_name: postgresql
+    image: igate-ivpn.iplon.co.in:8080/iot-6.6/postgresql:12
+    volumes:
+      - postgresql-etc:/etc/postgresql
+      - postgresql-lib:/var/lib/postgresql
+      - postgresql-log:/var/log
+      - /mnt/docker_common:/mnt/docker_common
+    network_mode: "host"
+    restart: always
+    privileged: true
+
+  postsql-grafana:
+    container_name: postsql-grafana
+    image: igate-ivpn.iplon.co.in:8080/iot-6.6/postsql:12
+    volumes:
+      - postsql_grafana-etc:/etc/postgresql
+      - postsql_grafana-lib:/var/lib/postgresql
+      - postsql_grafana-log:/var/log
+      - /mnt/docker_common:/mnt/docker_common
+    network_mode: "host"
+    restart: always
+    privileged: true
+
+  pgadmin4:
+    container_name: pgadmin
+    image: igate-ivpn.iplon.co.in:8080/iot-6.6/pgadmin:4
+    volumes:
+      - pgadmin-etc:/etc/apache2
+      - pgadmin-log:/var/log
+      - /mnt/docker_common:/mnt/docker_common
+    network_mode: "host"
+    restart: always
+    privileged: true
+
+  grafana:
+    container_name: grafana
+    image: igate-ivpn.iplon.co.in:8080/iot-6.6/grafana:9.4.7
+    volumes:
+      - grafana-etc:/etc/grafana
+      - grafana-lib:/var/lib/grafana
+      - grafana-log:/var/log
+      - /mnt/docker_common:/mnt/docker_common
+    network_mode: "host"
+    depends_on:
+      - influxdb
+      - postsql-grafana
+    restart: always
+    privileged: true
+
+  telegraf:
+    container_name: telegraf
+    image: igate-ivpn.iplon.co.in:8080/iot-6.6/telegraf:1.24.2
+    volumes:
+      - telegraf-etc:/etc/telegraf
+      - telegraf-log:/var/log
+      - /mnt/docker_common:/mnt/docker_common
+    network_mode: "host"
+    restart: always
+    privileged: true
+
+  nodered:
+    container_name: node-red
+    image: igate-ivpn.iplon.co.in:8080/iot-6.6/node-red:3.0.2
+    volumes:
+      - nodered-lib:/root/.node-red
+      - nodered-log:/var/log
+      - /mnt/docker_common:/mnt/docker_common
+    network_mode: "host"
+    restart: always
+    privileged: true
+
+  iplon-opcua:
+    container_name: iplon-opcua
+    image: igate-ivpn.iplon.co.in:8080/iot-6.6/iplon-opcua:2.0
+    volumes:
+      - iplon-opcua-lib:/home/iplon-opcua
+      - iplon-opcua-log:/var/log
+      - /mnt/docker_common:/mnt/docker_common
+    network_mode: "host"
+    restart: always
+    privileged: true
+
+  rabbitmq:
+    container_name: rabbitMQ
+    image: igate-ivpn.iplon.co.in:8080/iot-6.6/rabbitmq:3.12.2
+    volumes:
+      - rabbitmq-etc:/etc/rabbitmq
+      - rabbitmq-log:/var/log
+      - /mnt/docker_common:/mnt/docker_common
+    network_mode: "host"
+    restart: always
+    privileged: true
+
+  prometheus:
+    container_name: prometheus
+    image: igate-ivpn.iplon.co.in:8080/iot-6.6/prometheus:2.43.0
+    volumes:
+      - prometheus-lib:/home/prometheus
+      - /mnt/docker_common:/mnt/docker_common
+    network_mode: "host"
+    restart: always
+    privileged: true
+
+  pushgateway:
+    container_name: pushgateway
+    image: igate-ivpn.iplon.co.in:8080/iot-6.6/pushgateway:1.5.1
+    volumes:
+      - /mnt/docker_common:/mnt/docker_common
+    network_mode: "host"
+    depends_on:
+      - prometheus
+    restart: always
+    privileged: true  
+
+  promtail:
+    container_name: promtail
+    image: igate-ivpn.iplon.co.in:8080/iot-6.6/promtail:2.8.0
+    volumes:
+      - promtail-lib:/home/promtail
+      - /var/lib/docker/volumes/influxdb-log/_data:/var/log/IOT70/influxdb-log
+      - /var/lib/docker/volumes/grafana-log/_data:/var/log/IOT70/grafana-log
+      - /var/lib/docker/volumes/nodered-log/_data:/var/log/IOT70/nodered-log
+      - /var/lib/docker/volumes/telegraf-log/_data:/var/log/IOT70/telegraf-log
+      - /var/lib/docker/volumes/rabbitmq-log/_data:/var/log/IOT70/rabbitmq-log
+      - /var/lib/docker/volumes/postgresql-log/_data:/var/log/IOT70/postgresql-log
+      - /var/lib/docker/volumes/postsql_grafana-log/_data:/var/log/IOT70/postsql_grafana-log
+      - /var/lib/docker/volumes/pgadmin-log/_data:/var/log/IOT70/pgadmin-log
+      - /mnt/docker_common:/mnt/docker_common
+    network_mode: "host"
+    restart: always
+    privileged: true
+
+  loki:
+    container_name: loki
+    image: igate-ivpn.iplon.co.in:8080/iot-6.6/loki:2.8.0
+    volumes:
+      - loki-lib:/home/loki
+      - /mnt/docker_common:/mnt/docker_common
+    network_mode: "host"
+    restart: always
+    privileged: true
+  
+  ied61850:
+    container_name: iec61850
+    image: igate-ivpn.iplon.co.in:8080/iot-6.6/iec61850:1.9.0
+    volumes:
+      - /mnt/docker_common:/mnt/docker_common
+    network_mode: "host"
+    restart: always
+
+volumes:
+  scaback-lib:
+    external: true
+  
+  scabackFast-lib:
+    external: true
+  
+  influxdb-etc:
+    external: true
+  influxdb-lib:
+    external: true
+  influxdb-log:
+    external: true
+
+  postgresql-etc:
+    external: true
+  postgresql-lib:
+    external: true
+  postgresql-log:
+    external: true
+
+  postsql_grafana-etc:
+    external: true
+  postsql_grafana-lib:
+    external: true
+  postsql_grafana-log:
+    external: true
+
+  pgadmin-etc:
+    external: true
+  pgadmin-log:
+    external: true
+
+  grafana-etc:
+    external: true
+  grafana-lib:
+    external: true
+  grafana-log:
+    external: true
+
+  telegraf-etc:
+    external: true
+  telegraf-log:
+    external: true
+
+  nodered-lib:
+    external: true
+  nodered-log:
+    external: true
+
+  iplon-opcua-lib:
+    external: true
+  iplon-opcua-log:
+    external: true
+
+  rabbitmq-etc:
+    external: true
+  rabbitmq-log:
+    external: true
+
+  prometheus-lib:
+    external: true
+
+  loki-lib:
+    external: true
+
+  promtail-lib:
+    external: true
